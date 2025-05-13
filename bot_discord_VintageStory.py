@@ -88,8 +88,15 @@ async def pop(ctx):
 @bot.command()
 async def ping(ctx):
     try:
-        with socket.create_connection((SFTP_HOST, SFTP_PORT), timeout=5):
+        ip = socket.gethostbyname(SFTP_HOST)
+        with socket.create_connection((ip, SFTP_PORT), timeout=5):
             await ctx.send("✅ Serveur en ligne et accessible.")
+    except socket.timeout:
+        await ctx.send("❌ Délai dépassé : le serveur ne répond pas.")
+    except socket.gaierror:
+        await ctx.send("❌ Impossible de résoudre le nom d'hôte (DNS invalide ?)")
+    except ConnectionRefusedError:
+        await ctx.send("❌ Connexion refusée : serveur probablement éteint.")
     except Exception as e:
         await ctx.send(f"❌ Serveur injoignable. Erreur : {e}")
 
