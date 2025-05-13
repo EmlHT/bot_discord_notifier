@@ -46,9 +46,10 @@ async def pop(ctx):
             name = line.split("[Event]")[1].split("joins.")[0].strip().split()[0]
             players.add(name)
     if players:
-        await ctx.send(f"🎮 Joueurs connectés : {', '.join(players)}")
+        player_list = "\n".join(f"- {name}" for name in sorted(players))
+        await ctx.send(f"🎮 ({len(players)} en ligne)\nVillageois connectés :\n{player_list}")
     else:
-        await ctx.send("😴 Aucun joueur connecté actuellement.")
+        await ctx.send(f"😴  Les villageois se reposent ({len(players)} en ligne)")
 
 # Lancement du bot
 @bot.event
@@ -72,12 +73,12 @@ async def monitor_log():
                 name = line.split("[Event]")[1].split("joins.")[0].strip().split()[0]
                 if name not in players_online:
                     players_online.add(name)
-                    await channel.send(f"✅ **{name}** s'est connecté au serveur !")
+                    await channel.send(f"✅ **{name}** est de retour parmis nous ! ({len(players_online)} en ligne)")
             elif "[Event]" in line and "est parti." in line:
                 name = line.split("Le Joueur")[1].split("est parti.")[0].strip()
                 if name in players_online:
                     players_online.remove(name)
-                    await channel.send(f"❌ **{name}** s'est déconnecté.")
+                    await channel.send(f"❌ **{name}** s'en est allé. ({len(players_online)} en ligne)")
 
         await asyncio.sleep(30)
 
