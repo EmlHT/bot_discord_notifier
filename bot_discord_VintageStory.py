@@ -2,6 +2,8 @@ import paramiko
 import asyncio
 import discord
 import os
+import json
+from datetime import datetime, timedelta
 from discord.ext import commands
 
 # ---- CONFIG ----
@@ -14,6 +16,8 @@ LOG_PATH = os.getenv("LOG_PATH")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 TARGET_CHANNEL_NAME = "colporteur"
+
+STATS_FILE = "daily_stats.json"
 
 # ---- DISCORD ----
 intents = discord.Intents.default()
@@ -36,6 +40,34 @@ def get_last_lines():
         print(f"[ERREUR SFTP] {e}")
         return []
 
+# ---- Stats du jour ----
+def log_connection(name):
+    if not name or not name.isalnum():
+        return
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        with open(STATS_FILE, "r") as f:
+            stats = json.load(f)
+    except FileNotFoundError:
+        stats = {}
+
+    # Supprimer les dates plus vieilles que 30 jours
+    cutoff_date = datetime.now() - timedelta(days=30)
+    stats = {
+        date: players
+        for date, players in stats.items()
+        if datetime.strptime(date, "%Y-%m-%d") >= cutoff_date
+    }
+
+    # Ajouter la connexion du jour
+    stats.setdefault(today, [])
+    stats[today].append(name)
+
+    # Sauvegarder avec indentation pour lisibilité
+    with open(STATS_FILE, "w") as f:
+        json.dump(stats, f, indent=2)
+
 # ---- Commande !pop ----
 @bot.command()
 async def pop(ctx):
@@ -50,6 +82,36 @@ async def pop(ctx):
         await ctx.send(f"🎮 ({len(players)} en ligne)\nVillageois connectés :\n{player_list}")
     else:
         await ctx.send(f"😴  Les villageois se reposent ({len(players)} en ligne)")
+
+# ---- Commande !ping ----
+@bot.command()
+async def pingserver(ctx):
+    try:
+        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        transport.connect(username=SFTP_USER, password=SFTP_PASS)
+        transport.close()
+        await ctx.send("✅ Serveur en ligne et accessible.")
+    except Exception as e:
+        await ctx.send(f"❌ Serveur injoignable. Erreur : {e}")
+
+# ---- Commande !stats ----
+@bot.command()
+async def stats(ctx):
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        with open(STATS_FILE, "r") as f:
+            stats = json.load(f)
+
+    except FileNotFoundError:
+        stats = {}
+
+    today_stats = stats.get(today, [])
+    if today_stats:
+        count = len(today_stats)
+        top = max(set(today_stats), key=today_stats.count)
+        await ctx.send(f"📊 **Statistiques du {today}**\n- Connexions : {count}\n- Villageois le plus actif : {top}")
+    else:
+        await ctx.send(f"📊 Aucune donnée pour aujourd'hui ({today}).")
 
 # Lancement du bot
 @bot.event
@@ -73,7 +135,8 @@ async def monitor_log():
                 name = line.split("[Event]")[1].split("joins.")[0].strip().split()[0]
                 if name not in players_online:
                     players_online.add(name)
-                    await channel.send(f"✅ **{name}** est de retour parmis nous ! ({len(players_online)} en ligne)")
+                    log_connection(name)
+                    await channel.send(f"✅ **{name}** est de retour parmi nous ! ({len(players_online)} en ligne)")
             elif "[Event]" in line and "est parti." in line:
                 name = line.split("Le Joueur")[1].split("est parti.")[0].strip()
                 if name in players_online:
