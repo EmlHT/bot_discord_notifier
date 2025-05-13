@@ -93,7 +93,7 @@ async def ping(ctx):
             sock.settimeout(3)
             banner = sock.recv(1024).decode(errors="ignore").strip()
             if banner.startswith("SSH-"):
-                await ctx.send("✅ Serveur en ligne et accessible.")
+                await ctx.send(f"✅ Serveur en ligne : `{banner}`")
             else:
                 await ctx.send(f"⚠️ Port ouvert mais pas de réponse SSH. Bizarre... ➜ `{banner}`")
     except socket.timeout:
