@@ -89,8 +89,13 @@ async def pop(ctx):
 async def ping(ctx):
     try:
         ip = socket.gethostbyname(SFTP_HOST)
-        with socket.create_connection((ip, SFTP_PORT), timeout=5):
-            await ctx.send("✅ Serveur en ligne et accessible.")
+        with socket.create_connection((ip, SFTP_PORT), timeout=5) as sock:
+            sock.settimeout(3)
+            banner = sock.recv(1024).decode(errors="ignore").strip()
+            if banner.startswith("SSH-"):
+                await ctx.send("✅ Serveur en ligne et accessible.")
+            else:
+                await ctx.send(f"⚠️ Port ouvert mais pas de réponse SSH. Bizarre... ➜ `{banner}`")
     except socket.timeout:
         await ctx.send("❌ Délai dépassé : le serveur ne répond pas.")
     except socket.gaierror:
