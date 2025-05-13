@@ -80,9 +80,9 @@ async def pop(ctx):
             players.add(name)
     if players:
         player_list = "\n".join(f"- {name}" for name in sorted(players))
-        await ctx.send(f"🎮 ({len(players)} en ligne)\nVillageois connectés :\n{player_list}")
+        await ctx.send(f"🎮 *({len(players)} en ligne)*\nVillageois **connectés :**\n{player_list}")
     else:
-        await ctx.send(f"😴  Les villageois se reposent ({len(players)} en ligne)")
+        await ctx.send(f"😴  Les villageois se reposent *({len(players)} en ligne)*")
 
 # ---- Commande !ping ----
 @bot.command()
@@ -103,10 +103,10 @@ async def ping(ctx):
         # Recherche d'une ligne indiquant l'arrêt du serveur
         for line in reversed(lines):
             if "Stopped the server" in line or "Shutting down" in line or "Il est temps de reposer" in line:
-                await ctx.send("🛑 Le serveur est **éteint** (arrêt détecté dans les logs).")
+                await ctx.send("🛑 Le serveur est **éteint**")
                 return
 
-        await ctx.send("✅ Serveur en ligne")
+        await ctx.send("✅ Serveur en **ligne**")
         
     except FileNotFoundError:
         await ctx.send("⚠️ Le fichier log est introuvable.")
@@ -157,12 +157,12 @@ async def monitor_log():
                 if name not in players_online:
                     players_online.add(name)
                     log_connection(name)
-                    await channel.send(f"✅ **{name}** est de retour parmi nous ! ({len(players_online)} en ligne)")
+                    await channel.send(f"✅ **{name}** est de retour parmi nous ! *({len(players_online)} en ligne)*")
             elif "[Event]" in line and "est parti." in line:
                 name = line.split("Le Joueur")[1].split("est parti.")[0].strip()
                 if name in players_online:
                     players_online.remove(name)
-                    await channel.send(f"❌ **{name}** s'en est allé. ({len(players_online)} en ligne)")
+                    await channel.send(f"❌ **{name}** s'en est allé. *({len(players_online)} en ligne)*")
 
         await asyncio.sleep(30)
 
