@@ -1,2 +1,3 @@
 discord.py
 paramiko
+asyncio
