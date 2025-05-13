@@ -9,7 +9,7 @@ from discord.ext import commands
 
 # ---- CONFIG ----
 SFTP_HOST = os.getenv("SFTP_HOST")
-SFTP_PORT = int(os.getenv("SFTP_PORT", "22"))
+SFTP_PORT = int(os.getenv("SFTP_PORT"))
 SFTP_USER = os.getenv("SFTP_USER")
 SFTP_PASS = os.getenv("SFTP_PASS")
 
