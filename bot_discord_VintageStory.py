@@ -3,6 +3,7 @@ import asyncio
 import discord
 import os
 import json
+import socket
 from datetime import datetime, timedelta
 from discord.ext import commands
 
@@ -85,12 +86,10 @@ async def pop(ctx):
 
 # ---- Commande !ping ----
 @bot.command()
-async def pingserver(ctx):
+async def ping(ctx):
     try:
-        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
-        transport.connect(username=SFTP_USER, password=SFTP_PASS)
-        transport.close()
-        await ctx.send("✅ Serveur en ligne et accessible.")
+        with socket.create_connection((SFTP_HOST, SFTP_PORT), timeout=5):
+            await ctx.send("✅ Serveur en ligne et accessible.")
     except Exception as e:
         await ctx.send(f"❌ Serveur injoignable. Erreur : {e}")
 
