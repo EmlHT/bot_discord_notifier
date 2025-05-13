@@ -88,22 +88,32 @@ async def pop(ctx):
 @bot.command()
 async def ping(ctx):
     try:
-        ip = socket.gethostbyname(SFTP_HOST)
-        with socket.create_connection((ip, SFTP_PORT), timeout=5) as sock:
-            sock.settimeout(3)
-            banner = sock.recv(1024).decode(errors="ignore").strip()
-            if banner.startswith("SSH-"):
-                await ctx.send(f"✅ Serveur en ligne : `{banner}`")
-            else:
-                await ctx.send(f"⚠️ Port ouvert mais pas de réponse SSH. Bizarre... ➜ `{banner}`")
-    except socket.timeout:
-        await ctx.send("❌ Délai dépassé : le serveur ne répond pas.")
-    except socket.gaierror:
-        await ctx.send("❌ Impossible de résoudre le nom d'hôte (DNS invalide ?)")
-    except ConnectionRefusedError:
-        await ctx.send("❌ Connexion refusée : serveur probablement éteint.")
+        # Connexion SFTP
+        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        transport.connect(username=SFTP_USER, password=SFTP_PASS)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+
+        # Ouvre le fichier log et lit les dernières lignes
+        with sftp.file(LOG_PATH, 'r') as f:
+            lines = f.readlines()[-10:]  # Dernières 10 lignes
+
+        sftp.close()
+        transport.close()
+
+        # Recherche d'une ligne indiquant l'arrêt du serveur
+        for line in reversed(lines):
+            if "Stopped the server" in line or "Shutting down" in line or "Il est temps de reposer" in line:
+                await ctx.send("🛑 Le serveur est **éteint** (arrêt détecté dans les logs).")
+                return
+
+        await ctx.send("✅ Serveur en ligne")
+        
+    except FileNotFoundError:
+        await ctx.send("⚠️ Le fichier log est introuvable.")
+    except paramiko.AuthenticationException:
+        await ctx.send("❌ Authentification SSH échouée.")
     except Exception as e:
-        await ctx.send(f"❌ Serveur injoignable. Erreur : {e}")
+        await ctx.send(f"❌ Erreur lors de la vérification : {e}")
 
 # ---- Commande !stats ----
 @bot.command()
